@@ -1,0 +1,31 @@
+#coding:utf-8
+'''
+爬虫：爬取某一script项目下的数据段并整理录入csv
+'''
+
+import re #引入正则表达式
+import json #引入解析JSON对象（java轻量化对象）
+from datetime import datetime #引入时间处理模块
+import pandas as pd #引入数据运算操作分析的模块
+import requests #引入http通讯模块
+
+url = 'https://ncov.dxy.cn/ncovh5/view/pneumonia'
+
+page = requests.get(url).content.decode('utf-8')
+
+regexp = '<script id=\'getListByCountryTypeService1\'>([^<]+)' #正则表达式内容
+
+res = re.findall(regexp,page) #正则表达式选取内容
+data = res[0][44:-11] #选取的内容切除不需要部分
+dicts = json.loads(data) #从json转换为python格式
+
+for row in dicts:
+    for key in row:
+        if key in ['createTime','modifyTime']:
+            row[key] = datetime.fromtimestamp(row[key]/1000).strftime('%Y-%m-%d %H:%M:%S')  #把时间戳转换为时间格式
+        print(key,':',row[key],end=' ')  #输出
+
+    print('\n') #回车
+
+df = pd.DataFrame(dicts) #把dicts转换成DataFrame的类型，为了用to_csv方法方便的输出位csv文件
+df.to_csv('ncov1.csv',mode='a') #a模式可追加，方便后期继续爬取
